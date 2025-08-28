@@ -4,8 +4,16 @@
 
 Adafruit_MPU6050 mpu;
 
+#define CONVERT_G_TO_MS2    9.80665f
+#define FREQUENCY_HZ        50
+#define INTERVAL_MS         (1000 / (FREQUENCY_HZ + 1))
+
+static unsigned long last_interval_ms = 0;
+
 void setup() {
   Serial.begin(115200);
+  Serial.println("Started");
+  
   while (!Serial) delay(10); // Wait for serial
 
   if (!mpu.begin()) {
@@ -22,15 +30,17 @@ void setup() {
 }
 
 void loop() {
-  sensors_event_t a, g, temp;
-  mpu.getEvent(&a, &g, &temp);
+  if (millis() > last_interval_ms + INTERVAL_MS) {
+    last_interval_ms = millis();
+    
+    sensors_event_t a, g, temp;
+    mpu.getEvent(&a, &g, &temp);
 
-  // Print accelerometer values only (X, Y, Z)
-  Serial.print(a.acceleration.x, 4);
-  Serial.print(",");
-  Serial.print(a.acceleration.y, 4);
-  Serial.print(",");
-  Serial.println(a.acceleration.z, 4);
-
-  delay(100); // ~10 Hz output
+    // Print accelerometer values converted to m/s²
+    Serial.print(a.acceleration.x * CONVERT_G_TO_MS2);
+    Serial.print('\t');
+    Serial.print(a.acceleration.y * CONVERT_G_TO_MS2);
+    Serial.print('\t');
+    Serial.println(a.acceleration.z * CONVERT_G_TO_MS2);
+  }
 }
